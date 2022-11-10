@@ -35,10 +35,12 @@ const colorSwitcher = new ColorSwitcher({
   onClick: changeBackgroundColor,
 });
 
-refs.startButton.addEventListener('click', () =>
-  colorSwitcher.onStartButtonClick()
+refs.startButton.addEventListener(
+  'click',
+  colorSwitcher.onStartButtonClick.bind(colorSwitcher)
 );
 
-refs.stopButton.addEventListener('click', () =>
-  colorSwitcher.onStopButtonClick()
+refs.stopButton.addEventListener(
+  'click',
+  colorSwitcher.onStopButtonClick.bind(colorSwitcher)
 );
