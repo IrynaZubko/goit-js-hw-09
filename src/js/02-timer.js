@@ -13,87 +13,98 @@ const refs = {
   },
 };
 
-let selectedUserDates = null;
-let nowDate = null;
+class CountdownTimer {
+  constructor({ onTick }) {
+    this.selectedUserDates = null;
+    this.nowDate = null;
 
-const getNowDate = () => (nowDate = Date.now());
+    this.options = {
+      enableTime: true,
+      time_24hr: true,
+      defaultDate: new Date(),
+      minuteIncrement: 1,
+      onClose: selectedDates => {
+        this.selectedUserDates = selectedDates[0];
+        // console.log(this.selectedUserDates);
+        this.onCloseCalendar();
+      },
+    };
 
-const options = {
-  enableTime: true,
-  time_24hr: true,
-  defaultDate: new Date(),
-  minuteIncrement: 1,
-  clickOpens: false,
-  onClose(selectedDates) {
-    selectedUserDates = selectedDates[0];
-    // console.log(selectedUserDates);
-    onCloseCalendar();
-  },
-};
+    this.calendar = flatpickr('#datetime-picker', this.options);
+    this.onTick = onTick;
+  }
+
+  onBlock() {
+    refs.startButton.setAttribute('disabled', true);
+    refs.calendar.setAttribute('disabled', true);
+  }
+
+  getNowDate() {
+    this.nowDate = Date.now();
+  }
+
+  onCloseCalendar() {
+    this.getNowDate();
+
+    if (this.selectedUserDates < this.nowDate) {
+      Notify.failure('Please choose a date in the future');
+    } else {
+      refs.startButton.removeAttribute('disabled');
+    }
+  }
+
+  startCountdownTimer() {
+    this.onBlock();
+
+    const timerId = setInterval(() => {
+      this.getNowDate();
+
+      const currentDate = this.selectedUserDates - this.nowDate;
+
+      if (currentDate <= 0) {
+        clearInterval(timerId);
+        refs.calendar.removeAttribute('disabled');
+        return;
+      }
+
+      this.onTick(this.convertMs(currentDate));
+    }, 1000);
+  }
+
+  convertMs(ms) {
+    // Number of milliseconds per unit of time
+    const second = 1000;
+    const minute = second * 60;
+    const hour = minute * 60;
+    const day = hour * 24;
+
+    // Remaining days
+    const days = Math.floor(ms / day);
+    // Remaining hours
+    const hours = Math.floor((ms % day) / hour);
+    // Remaining minutes
+    const minutes = Math.floor(((ms % day) % hour) / minute);
+    // Remaining seconds
+    const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+
+    return { days, hours, minutes, seconds };
+  }
+}
+
+refs.startButton.setAttribute('disabled', true);
+
+const countdownTimer = new CountdownTimer({
+  onTick: updateTimerFields,
+});
+
+refs.startButton.addEventListener(
+  'click',
+  countdownTimer.startCountdownTimer.bind(countdownTimer)
+);
 
 Notify.init({
   position: 'center-top',
 });
-
-let calendar = flatpickr('#datetime-picker', options);
-
-refs.startButton.setAttribute('disabled', true);
-
-refs.startButton.addEventListener('click', startCountdownTimer);
-refs.calendar.addEventListener('click', onOpenCalendar);
-
-function onOpenCalendar() {
-  calendar.open();
-}
-
-function onCloseCalendar() {
-  getNowDate();
-
-  if (selectedUserDates < nowDate) {
-    Notify.failure('Please choose a date in the future');
-    // window.alert('Please choose a date in the future');
-  } else {
-    refs.startButton.removeAttribute('disabled');
-  }
-}
-
-function startCountdownTimer() {
-  refs.startButton.setAttribute('disabled', true);
-  refs.calendar.removeEventListener('click', onOpenCalendar);
-
-  const timerId = setInterval(() => {
-    getNowDate();
-
-    const currentDate = selectedUserDates - nowDate;
-
-    if (currentDate <= 0) {
-      clearInterval(timerId);
-      refs.calendar.addEventListener('click', onOpenCalendar);
-      return;
-    }
-
-    updateTimerFields(convertMs(currentDate));
-  }, 1000);
-}
-
-function convertMs(ms) {
-  // Number of milliseconds per unit of time
-  const second = 1000;
-  const minute = second * 60;
-  const hour = minute * 60;
-  const day = hour * 24;
-
-  // Remaining days
-  const days = Math.floor(ms / day);
-  // Remaining hours
-  const hours = Math.floor((ms % day) / hour);
-  // Remaining minutes
-  const minutes = Math.floor(((ms % day) % hour) / minute);
-  // Remaining seconds
-  const seconds = Math.floor((((ms % day) % hour) % minute) / second);
-
-  return { days, hours, minutes, seconds };
-}
 
 function addLeadingZero(value) {
   return String(value).padStart(2, '0');
@@ -105,42 +116,3 @@ function updateTimerFields({ days, hours, minutes, seconds }) {
   refs.timer.minutes.textContent = addLeadingZero(minutes);
   refs.timer.seconds.textContent = addLeadingZero(seconds);
 }
-
-// console.log(convertMs(2000)); // {days: 0, hours: 0, minutes: 0, seconds: 2}
-// console.log(convertMs(140000)); // {days: 0, hours: 0, minutes: 2, seconds: 20}
-// console.log(convertMs(24140000)); // {days: 0, hours: 6 minutes: 42, seconds: 20}
-
-// class CountdownTimer {
-//   constructor() {
-//     // this.options = {
-//     //   enableTime: true,
-//     //   time_24hr: true,
-//     //   defaultDate: new Date(),
-//     //   minuteIncrement: 1,
-//     //   onClose(selectedDates) {
-//     //     // selectedDates = [];
-//     //     console.log(selectedDates[0]);
-//     //     // this.onCloseCalendar();
-//     //   },
-//     // };
-//     // this.onCloseCalendar = this.onCloseCalendar();
-
-//     this.calendar();
-//     // this.onCloseCalendar();
-//   }
-
-//   calendar() {
-//     flatpickr('#datetime-picker', options);
-//   }
-
-//   onCloseCalendar() {
-//     console.log('ready');
-//     // this.options.onClose();
-//   }
-// }
-
-// const countdownTimer = new CountdownTimer();
-
-// refs.calendar.addEventListener('click', countdownTimer.onCloseCalendar);
-
-// console.log(refs.calendar);
